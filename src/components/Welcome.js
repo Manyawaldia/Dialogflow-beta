@@ -2,6 +2,11 @@ import React from 'react';
 import '../styles/App.css';
 import {Link} from "react-router-dom";
 import Button from 'react-bootstrap/Button';
+import Messages from './Messages';
+
+// const df = require("dialogflow");
+// const languageCode = "en-US";
+
 
 class Welcome extends React.Component {
   render() {
