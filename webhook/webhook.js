@@ -139,7 +139,6 @@ app.post('/', express.json(), (req, res) => {
     }
     await fetch(ENDPOINT_URL + '/application/messages', request)
   }
-  // 
 
 
   async function login() {
@@ -225,7 +224,7 @@ app.post('/', express.json(), (req, res) => {
 
     let success = "Redirecting to " + category + " page";
     let error = "Sorry there was an error please re-enter a category"
-    console.log(res.message)
+    // console.log(res.message)
     if (res.message === "Application state modified!") {
       agent.add(success);
       await showMessage(Date(), false, success);
@@ -239,7 +238,7 @@ app.post('/', express.json(), (req, res) => {
 
   async function showAllTags() {
     await showMessage(Date(), true, agent.query);
-    let msg = "Showing all available tags: ";  
+    let msg = "Showing all available tags: ";
     agent.add(msg);
     msg += tags.join(", ")
     // console.log(msg)
@@ -273,7 +272,7 @@ app.post('/', express.json(), (req, res) => {
 
     const res = await ret.json()
 
-    console.log(res)
+    // console.log(res)
     // let success = "Redirecting to " + name + " page. Scroll for full information on reviews";
     let error = "Sorry there was an error please try again"
     let msg = []
@@ -311,6 +310,165 @@ app.post('/', express.json(), (req, res) => {
 
   }
 
+  async function addToCart() {
+
+    await showMessage(Date(), true, agent.query);
+    let object = agent.parameters.object;
+    let pID = 0
+
+    items.forEach((element) => {
+      if (element.name === object) {
+        pID = element.id;
+        name = element.name
+      }
+    });
+
+    // console.log(object)
+    let request = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-token': token
+      },
+      body: JSON.stringify({
+        back: false,
+        dialogFlowUpdate: true,
+        page: "/application/products"
+      })
+    }
+
+    const ret = await fetch(ENDPOINT_URL + '/application/products/' + pID, request)
+    const res = await ret.json()
+
+    let success = "Adding" + object + " to cart!";
+    let error = "Sorry there was an error please retry. Either the item could not be find or it does not exist."
+    console.log(res)
+
+    if (res.message === "Product added to cart!") {
+      agent.add(success)
+      await showMessage(Date(), false, success)
+    }
+    else {
+      agent.add(error)
+      await showMessage(Date(), false, error)
+    }
+
+  }
+
+  async function review() {
+
+    await showMessage(Date(), true, agent.query);
+
+    // console.log(object)
+    let request = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-token': token
+      },
+    }
+
+    const ret = await fetch(ENDPOINT_URL + '/application/products/', request)
+    const res = await ret.json()
+
+    let error = "Sorry there was an error please retry."
+    console.log(res)
+    let msg = []
+    let str = ''
+    if (res.products !== undefined) {
+      res.products.forEach((element) => {
+        str = element.name + " for $" + element.price
+        msg.push(str.toString())
+
+      });
+      console.log(msg)
+      await showMessage(Date(), false, "Following are the items in your cart: ")
+      for (var i = 0; i < msg.length; i++) {
+
+        agent.add(msg[i])
+        await showMessage(Date(), false, msg[i]);
+      }
+
+    }
+    else {
+      agent.add(error)
+      await showMessage(Date(), false, error)
+    }
+
+  }
+
+  async function confirm() {
+
+    await showMessage(Date, true, agent.query);
+
+    let request = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-token': token
+      },
+      body: JSON.stringify({
+        page: "/" + username + "/cart-confirmed"
+      })
+    }
+
+    const ret = await fetch(ENDPOINT_URL + '/'+ username + '/cart-confirmed', request)
+    const res = await ret.json()
+
+    let success = "Confirming Cart";
+    let error = "Sorry there was an error, please retry"
+    console.log(res.message)
+    if (res.message === "Application state modified!") {
+      agent.add(success);
+      await showMessage(Date(), false, success);
+    }
+    else {
+      agent.add(error)
+      await showMessage(Date(), false, error)
+    }
+
+
+  }
+
+  async function remove() {
+    await showMessage(Date(), true, agent.query);
+
+    let object = agent.parameters.object;
+    let pID = 0
+
+    items.forEach((element) => {
+      if (element.name === object) {
+        pID = element.id;
+        name = element.name
+      }
+    });
+    // console.log(pID)
+
+    let request = {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-token': token
+      }
+    }
+    let ret = await fetch(ENDPOINT_URL + '/application/products/' + pID, request)
+    const res = await ret.json()
+
+    let success = "Removing " + object + " from cart!";
+    let error = "Sorry there was an error please retry."
+    console.log(res)
+
+    if (res.message === "Product removed from cart!") {
+      agent.add(success)
+      await showMessage(Date(), false, success)
+    }
+    else {
+      agent.add(error)
+      await showMessage(Date(), false, error)
+    }
+
+  }
+
 
   let intentMap = new Map()
   intentMap.set('Default Welcome Intent', welcome)
@@ -321,6 +479,10 @@ app.post('/', express.json(), (req, res) => {
   intentMap.set('query about categories', whatCategories)
   intentMap.set('Product Info', itemQuery)
   intentMap.set('all tags', showAllTags)
+  intentMap.set('addCart', addToCart)
+  intentMap.set('removeCart', remove)
+  intentMap.set('review', review)
+  intentMap.set('confirm cart', confirm)
 
   agent.handleRequest(intentMap)
 
